@@ -1,0 +1,1 @@
+enum tile_type {GROUND, WALL};
