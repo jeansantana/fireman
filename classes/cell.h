@@ -2,30 +2,20 @@
 #define CELL_H
 
 #include "door.h"
-#include "utils.h"
 #include "point.h"
 
 class cell {
 	tile_type tile;
-	door * d;
 	point * position;
 
 public:
 	cell() {
 
 	}
-	cell(tile_type tile, door * d, point * position) {
+
+	cell(tile_type tile, point * position) {
 		this->tile = tile;
-		this->d = d;
 		this->position = position;
-	}
-
-	door* getDoor() {
-		return d;
-	}
-
-	void setDoor(door* d) {
-		this->d = d;
 	}
 
 	point* getPosition() {

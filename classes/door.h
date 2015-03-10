@@ -22,6 +22,14 @@ public:
 		return currentState;
 	}
 
+	void setCurrentState(int newState) {
+		this->currentState = newState;
+	}
+
+	void setNextState(int newState) {
+		this->nextState = newState;
+	}
+
 	int getNextState() {
 		return nextState;
 	}
@@ -33,6 +41,7 @@ public:
 		int aux = currentState;
 		currentState = nextState;
 		nextState = aux;
+		return NULL;
 	}
 
 	point * getPosition() {

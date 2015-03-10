@@ -3,6 +3,7 @@
 #include "../classes/point.h"
 #include "../classes/door.h"
 #include "../classes/cell.h"
+#include "../classes/exploitElement.h"
 #include <vector>
 
 using namespace std;
@@ -11,24 +12,23 @@ void printPoint(point * p) {
 	cout << "(" << p->getX() << ", " << p->getY() << ") ";
 }
 
-void printVectorInt(vector<vector<int> > board) {
-	int tam = board.size();
+void printDoors(vector<vector<door> > doors) {
+	int tam = doors.size();
+	cout << "TM: " << tam << endl;
 	for (int i = 0; i < tam; ++i) {
 		for (int j = 0; j < tam; ++j) {
-			cout << board[i][j] << " ";
+			cout << "[" << doors[i][j].getState() << "/" << doors[i][j].getNextState() << "] ";
 		}
 		cout << endl;
 	}
 }
 
-void printVectorCell(vector<vector<cell> > board) {
+
+void printVectorInt(vector<vector<int> > board) {
 	int tam = board.size();
 	for (int i = 0; i < tam; ++i) {
 		for (int j = 0; j < tam; ++j) {
-			cout << board[i][j].getTile() << " "
-					<< board[i][j].getDoor()->getNextState() << " " << "("
-					<< board[i][j].getDoor()->getPosition()->getX() << ", "
-					<< board[i][j].getDoor()->getPosition()->getY() << ") ";
+			cout << board[i][j] << " ";
 		}
 		cout << endl;
 	}
@@ -76,33 +76,7 @@ vector<cell> getAdjacentes(vector<vector<cell> > board, point * p) {
  * retorna true se for possível ir de a para b, false caso contrário.
  *
  * */
-bool pathExists(vector<vector<cell> > board, point *a, point *b) {
-	bool res = true;
-	if (board[b->getX()][b->getY()].getTile() == WALL) {
-		res = false;
-	// para 1 e 4
-	} else if (a->getX() == b->getX() - 1 && a->getY() == b->getY()) {
-		//a = 1
-		if (board[a->getX()][a->getY()].getDoor()->getState() == 1
-				&& board[b->getX()][b->getY() - 1].getTile() == WALL) {
-			res = false;
-		} else if (board[a->getX()][a->getY()].getDoor()->getState() == 4
-				&& board[b->getX()][b->getY() + 1].getTile() == WALL) {
-			res = false;
-		}
-	//para 2 e 3
-	} else if (a->getX() == b->getX() && a->getY() == b->getY() + 1) {
-		if (board[a->getX()][a->getY()].getDoor()->getState() == 2
-				&& board[b->getX() + 1][b->getY()].getTile() == WALL) {
-			res = false;
-		} else if (board[a->getX()][a->getY()].getDoor()->getState() == 3
-				&& board[b->getX() - 1][b->getY()].getTile() == WALL) {
-			res = false;
-		}
-	}
 
-	return res;
-}
 
 void findPath(vector<vector<cell> > board, point * s,
 		vector<vector<int> > * Mexp) {
@@ -112,12 +86,41 @@ void findPath(vector<vector<cell> > board, point * s,
 	for (int i = 0; i < tam_lAdja; ++i) {
 		point *v = new point(lAdja[i].getPosition()->getX(),
 				lAdja[i].getPosition()->getY());
-		if ((*Mexp)[v->getX()][v->getY()] == 0 && pathExists(board, s, v)) {
+		/*if ((*Mexp)[v->getX()][v->getY()] == 0 && pathExists(board, s, v)) {
 			(*Mexp)[v->getX()][v->getY()] = 1;
 			findPath(board, v, Mexp);
-		}
+		}*/
 	}
 
+}
+
+void printElementExploit(exploitElement e) {
+	cout << "[U: " << e.isUp() <<
+			", D: " << e.isDown() <<
+			", L: " << e.isLeft() <<
+			", R: " << e.isRight() << "]; ";
+}
+
+bool avalCanMove(vector<vector<door> > doors, point * pDoorFrom, point * pDoorTo, int typeDoorFrom, int typeDoorTo, int typeNextDoor) {
+	return (doors[pDoorFrom->getX()][pDoorFrom->getY()].getState() == typeDoorFrom
+			&& doors[pDoorFrom->getX()][pDoorFrom->getY()].getNextState() == typeNextDoor)
+			||
+			(doors[pDoorTo->getX()][pDoorTo->getY()].getState() == typeDoorTo &&
+			doors[pDoorTo->getX()][pDoorTo->getY()].getNextState() == typeNextDoor);
+}
+
+bool canMove(vector<vector<door> > doors, point *s, point *f) {
+	bool canMove = false;
+	if (s->getDirection(f) == UP) {
+		canMove = avalCanMove(doors, s->getDoorUR(), s->getDoorUL(), 4, 1, 2);
+	} else if (s->getDirection(f) == DOWN) {
+		canMove = avalCanMove(doors, s->getDoorDL(), s->getDoorDR(), 1, 4, 3);
+	} else if (s->getDirection(f) == RIGHT) {
+		canMove = avalCanMove(doors, s->getDoorUR(), s->getDoorDR(), 3, 2, 1);
+	} else if (s->getDirection(f) == LEFT) {
+		canMove = avalCanMove(doors, s->getDoorUL(), s->getDoorDL(), 3, 2, 4);
+	}
+	return canMove;
 }
 
 int main() {
@@ -128,13 +131,19 @@ int main() {
 		point s(a, b);
 		point f(c, d);
 
-		vector<vector<cell> > board;
-		vector<vector<int> > Mexp;
-		for (int i = 0; i < n; ++i) {
+
+		vector< vector<cell> > board;
+		vector< vector <door> > doors;
+
+		//vector<vector<int> > Mexp;
+
+		//leitura da matriz de walls
+
+		/*for (int i = 0; i < n; ++i) {
 			vector<int> line;
 			line.assign(n, 0);
-			Mexp.assign(n, line);
-		}
+			//Mexp.assign(n, line);
+		}*/
 
 		for (int i = 0; i < n; i++) {
 			vector<cell> line;
@@ -151,36 +160,40 @@ int main() {
 			board.push_back(line);
 		}
 
-		for (int i = 0; i < n; ++i) {
-			for (int j = 0; j < n; ++j) {
+		//reading doors current state matrix
+		for (int i = 0; i < n + 1; ++i) {
+			vector<door> line;
+			for (int j = 0; j < n + 1; ++j) {
 				int cDoor;
 				cin >> cDoor;
 				point * p = new point(i, j);
-				door * d = new door(cDoor, -1, p);
-				board[i][j].setDoor(d);
+				//door (currenteState, nextState, point)
+				door d (cDoor, -1, p);
+				line.push_back(d);
 			}
+			doors.push_back(line);
 		}
-
-		for (int i = 0; i < n; ++i) {
-			for (int j = 0; j < n; ++j) {
+		//reading doors next state matrix
+		for (int i = 0; i < n + 1; ++i) {
+			for (int j = 0; j < n + 1; ++j) {
 				int nDoor;
 				cin >> nDoor;
-				door * d = new door(board[i][j].getDoor()->getState(), nDoor,
-						board[i][j].getPosition());
-				board[i][j].setDoor(d);
+				doors[i][j].setNextState(nDoor);
 			}
 		}
 
-		/*cout << "=======INSTANCE=======\n";
-		 printVectorInt(Mexp);*/
+		cout << canMove(doors, new point(0, 0), new point(0, 1)) << endl;
+		cout << canMove(doors, new point(2, 1), new point(2, 2)) << endl;
 
-		findPath(board, &s, &Mexp);
-		//cout << "\nAnother matrix\n";
-
-		printVectorInt(Mexp);
+		/*cout << "=======BEGIN-INSTANCE=======\nBOARD\n";
+		printVectorCellBoard(board);
+		cout << "DOORS\n";
+		printDoors(doors);
+		cout << "=======END-INSTANCE=======\n";*/
 
 	}
 
 	return 0;
 }
+
 
