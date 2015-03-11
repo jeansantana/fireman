@@ -17,12 +17,12 @@ void printDoors(vector<vector<door> > doors) {
 	cout << "TM: " << tam << endl;
 	for (int i = 0; i < tam; ++i) {
 		for (int j = 0; j < tam; ++j) {
-			cout << "[" << doors[i][j].getState() << "/" << doors[i][j].getNextState() << "] ";
+			cout << "[" << doors[i][j].getState() << "/"
+					<< doors[i][j].getNextState() << "] ";
 		}
 		cout << endl;
 	}
 }
-
 
 void printVectorInt(vector<vector<int> > board) {
 	int tam = board.size();
@@ -77,7 +77,6 @@ vector<cell> getAdjacentes(vector<vector<cell> > board, point * p) {
  *
  * */
 
-
 void findPath(vector<vector<cell> > board, point * s,
 		vector<vector<int> > * Mexp) {
 	vector<cell> lAdja = getAdjacentes(board, s);
@@ -87,26 +86,27 @@ void findPath(vector<vector<cell> > board, point * s,
 		point *v = new point(lAdja[i].getPosition()->getX(),
 				lAdja[i].getPosition()->getY());
 		/*if ((*Mexp)[v->getX()][v->getY()] == 0 && pathExists(board, s, v)) {
-			(*Mexp)[v->getX()][v->getY()] = 1;
-			findPath(board, v, Mexp);
-		}*/
+		 (*Mexp)[v->getX()][v->getY()] = 1;
+		 findPath(board, v, Mexp);
+		 }*/
 	}
 
 }
 
 void printElementExploit(exploitElement e) {
-	cout << "[U: " << e.isUp() <<
-			", D: " << e.isDown() <<
-			", L: " << e.isLeft() <<
-			", R: " << e.isRight() << "]; ";
+	cout << "[U: " << e.isUp() << ", D: " << e.isDown() << ", L: " << e.isLeft()
+			<< ", R: " << e.isRight() << "]; ";
 }
 
-bool avalCanMove(vector<vector<door> > doors, point * pDoorFrom, point * pDoorTo, int typeDoorFrom, int typeDoorTo, int typeNextDoor) {
-	return (doors[pDoorFrom->getX()][pDoorFrom->getY()].getState() == typeDoorFrom
-			&& doors[pDoorFrom->getX()][pDoorFrom->getY()].getNextState() == typeNextDoor)
-			||
-			(doors[pDoorTo->getX()][pDoorTo->getY()].getState() == typeDoorTo &&
-			doors[pDoorTo->getX()][pDoorTo->getY()].getNextState() == typeNextDoor);
+bool avalCanMove(vector<vector<door> > doors, point * pDoorFrom,
+		point * pDoorTo, int typeDoorFrom, int typeDoorTo, int typeNextDoor) {
+	return (doors[pDoorFrom->getX()][pDoorFrom->getY()].getState()
+			== typeDoorFrom
+			&& doors[pDoorFrom->getX()][pDoorFrom->getY()].getNextState()
+					== typeNextDoor)
+			|| (doors[pDoorTo->getX()][pDoorTo->getY()].getState() == typeDoorTo
+					&& doors[pDoorTo->getX()][pDoorTo->getY()].getNextState()
+							== typeNextDoor);
 }
 
 bool canMove(vector<vector<door> > doors, point *s, point *f) {
@@ -131,19 +131,18 @@ int main() {
 		point s(a, b);
 		point f(c, d);
 
-
-		vector< vector<cell> > board;
-		vector< vector <door> > doors;
+		vector<vector<cell> > board;
+		vector<vector<door> > doors;
 
 		//vector<vector<int> > Mexp;
 
 		//leitura da matriz de walls
 
 		/*for (int i = 0; i < n; ++i) {
-			vector<int> line;
-			line.assign(n, 0);
-			//Mexp.assign(n, line);
-		}*/
+		 vector<int> line;
+		 line.assign(n, 0);
+		 //Mexp.assign(n, line);
+		 }*/
 
 		for (int i = 0; i < n; i++) {
 			vector<cell> line;
@@ -168,7 +167,7 @@ int main() {
 				cin >> cDoor;
 				point * p = new point(i, j);
 				//door (currenteState, nextState, point)
-				door d (cDoor, -1, p);
+				door d(cDoor, -1, p);
 				line.push_back(d);
 			}
 			doors.push_back(line);
@@ -182,18 +181,35 @@ int main() {
 			}
 		}
 
+		printVectorCellBoard(board);
+		printDoors(doors);
+
 		cout << canMove(doors, new point(0, 0), new point(0, 1)) << endl;
 		cout << canMove(doors, new point(2, 1), new point(2, 2)) << endl;
+		cout << "Start with your move: \n";
+		int x1, y1, x2, y2;
+		while (scanf("%d %d %d %d", &x1, &y1, &x2, &y2) == 4) {
+			point *p1 = new point(x1, y1);
+			point *p2 = new point(x2, y2);
+			if (canMove(doors, p1, p2)) {
+				cout << "Yes from ";
+			} else {
+				cout << "No from ";
+			}
+			printPoint(p1);
+			cout << "to ";
+			printPoint(p2);
+			cout << endl;
+		}
 
 		/*cout << "=======BEGIN-INSTANCE=======\nBOARD\n";
-		printVectorCellBoard(board);
-		cout << "DOORS\n";
-		printDoors(doors);
-		cout << "=======END-INSTANCE=======\n";*/
+		 printVectorCellBoard(board);
+		 cout << "DOORS\n";
+		 printDoors(doors);
+		 cout << "=======END-INSTANCE=======\n";*/
 
 	}
 
 	return 0;
 }
-
 
