@@ -4,6 +4,7 @@
 #include "point.h"
 
 class door {
+	int id;
 	int currentState;
 	int nextState;
 	point * position;
@@ -12,10 +13,19 @@ public:
 
 	}
 
-	door(int currentState, int nextState, point * position) {
+	door(int id, int currentState, int nextState, point * position) {
 		this->currentState = currentState;
 		this->nextState = nextState;
 		this->position = position;
+		this->id = id;
+	}
+
+	int getId() {
+		return id;
+	}
+
+	void setId(int id) {
+		this->id = id;
 	}
 
 	int getState() {
