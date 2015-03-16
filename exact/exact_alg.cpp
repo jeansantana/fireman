@@ -5,8 +5,22 @@
 #include "../classes/cell.h"
 #include "../classes/exploitElement.h"
 #include <vector>
+#include <queue>
+#include <functional>
+#include <climits>
+#include <set>
 
 using namespace std;
+
+typedef pair<int, int> ii;
+typedef vector<int> vi;
+typedef vector<ii> vii;
+typedef vector<vi> vvi;
+typedef vector<cell> vc;
+typedef vector<door> vd;
+typedef vector<vc> vvc;
+typedef vector<vd> vvd;
+
 
 void printPoint(point * p) {
 	cout << "(" << p->getX() << ", " << p->getY() << ") ";
@@ -24,7 +38,7 @@ void printDoors(vector<vector<door> > doors) {
 	}
 }
 
-void printVectorInt(vector<vector<int> > board) {
+void printVectorInt(vvi board) {
 	int tam = board.size();
 	for (int i = 0; i < tam; ++i) {
 		for (int j = 0; j < tam; ++j) {
@@ -139,9 +153,24 @@ void findPath(vector<vector<cell> > board, vector<vector<door> > doors,
 
 }
 
-int dijkstra(vector<vector<cell> > board, vector<vector<door> > doors,
-		point * s, int n, int nDoorsComb, int *** Mexp) {
-	int (*M1)[n][n][nDoorsComb] = (int (*)[n][n][nDoorsComb]) Mexp;
+
+typedef pair<int, cell> ic;
+
+struct verticeComparator
+{
+    bool operator()(ic const &v1, ic const &v2)
+    {
+        return v1.first < v2.first;
+    }
+};
+
+typedef std::set<ic, verticeComparator> JobSet;
+
+int dijkstra(vvc board, vvd doors,
+		point * s, vector<vvi> graph) {
+
+	priority_queue<ic, vector<ic>, verticeComparator> pq;
+	pq.push(ic());
 
 	return 0;
 }
@@ -183,6 +212,7 @@ int main() {
 		}
 
 		scanf("%d", &nDoors);
+
 		//reading doors current state matrix
 
 		vector<vector<vector<int> > > MExploit;
@@ -193,14 +223,14 @@ int main() {
 			MExploit[i].resize(n);
 
 			for (int j = 0; j < n; ++j) {
-				MExploit[i][j].resize(nDoors);
+				MExploit[i][j].resize(1 << nDoors);
 				MExploit[i][j].assign(n, 0);
 			}
 		}
 
 		/*for (int i = 0; i < n; ++i) {
 			for (int j = 0; j < n; ++j) {
-				for (int k = 0; k < nDoors; k++) {
+				for (int k = 0; k < 1 << nDoors; k++) {
 					cout << MExploit[i][j][k] << " ";
 				}
 				cout << "\n";
@@ -240,8 +270,6 @@ int main() {
 		cout << "============== MOVEMENT MATRIX =============\n";
 		findPath(board, doors, &s, &f, &Mexp, &paths, 0);
 		printVectorInt(Mexp);
-		int ***M;
-		dijkstra(board, doors, &s, n, nDoors, M);
 
 		/*cout << canMove(doors, new point(0, 0), new point(0, 1)) << endl;
 		 cout << canMove(doors, new point(2, 1), new point(2, 2)) << endl;
