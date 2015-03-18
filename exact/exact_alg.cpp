@@ -108,8 +108,12 @@ bool avalCanMove(vector<vector<door> > doors, point * pDoorFrom,
 							== typeNextDoor);
 }
 
-bool canMove(vector<vector<cell> > board, vector<vector<door> > doors, point *s,
-		point *f) {
+bool canMove(vector<vector<cell> > board, vector<vector<door> > doors, cell *from,
+		cell *to) {
+
+	point *s = from->getPosition();
+	point *f = to->getPosition();
+
 	bool canMove = false;
 	if (board[f->getX()][f->getY()].getTile() == GROUND) {
 		canMove = true;
@@ -123,6 +127,12 @@ bool canMove(vector<vector<cell> > board, vector<vector<door> > doors, point *s,
 		canMove = avalCanMove(doors, s->getDoorUL(), s->getDoorDL(), 3, 2, 4);
 	}
 	return canMove;
+}
+
+int getDoorConfiguration(vvc board, vvd doors, cell *from, cell *to) {
+	if (canMove(board, doors, from, to)) {
+
+	}
 }
 
 /**
@@ -153,7 +163,9 @@ void findPath(vector<vector<cell> > board, vector<vector<door> > doors,
 
 }
 
-
+/** vértice {configuração atual de portas, cell}
+todo peso entre duas celulas c1 e c2 é 1, 
+desde que se possa ir de c1 para c2 */
 typedef pair<int, cell> ic;
 
 struct verticeComparator
@@ -168,9 +180,27 @@ typedef std::set<ic, verticeComparator> JobSet;
 
 int dijkstra(vvc board, vvd doors,
 		point * s, vector<vvi> graph) {
-
+	int n = board.size();
+	vvi dist(n, vi(n, INT_MAX));
+	dis[s->getX()][s->getY()] = 0;
 	priority_queue<ic, vector<ic>, verticeComparator> pq;
-	pq.push(ic());
+	pq.push( ic(0, board[s->getX()][s->getY()]) );
+
+	while (!pq.empty()) {
+		ic front = pq.top();
+		pq.pop();
+
+		int doorConfig = front.first;
+		cell c = front.second;
+		point * p = c.getPosition();
+		//analizar if abaixo
+		if (dist[p->getX()][p->getY()]) continue;
+		/*pega os adjacentes de c em board com as configurações
+		possíveis de portas provocadas por tais movimentos */
+		vector<ic> adjs = getAdjacentes(board, doors, c);
+		
+
+	}
 
 	return 0;
 }
