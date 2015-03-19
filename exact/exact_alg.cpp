@@ -108,59 +108,39 @@ bool avalCanMove(vector<vector<door> > doors, point * pDoorFrom,
 							== typeNextDoor);
 }
 
-bool canMove(vector<vector<cell> > board, vector<vector<door> > doors, cell *from,
-		cell *to) {
+bool canMove(vector<vector<cell> > board, vector<vector<door> > doors, point *s,
+		point *f) {
 
-	point *s = from->getPosition();
-	point *f = to->getPosition();
+	//point *s = from->getPosition();
+	//point *f = to->getPosition();
 
 	bool canMove = false;
 	if (board[f->getX()][f->getY()].getTile() == GROUND) {
-		canMove = true;
-	} else if (s->getDirection(f) == UP) {
-		canMove = avalCanMove(doors, s->getDoorUR(), s->getDoorUL(), 4, 1, 2);
-	} else if (s->getDirection(f) == DOWN) {
-		canMove = avalCanMove(doors, s->getDoorDL(), s->getDoorDR(), 1, 4, 3);
-	} else if (s->getDirection(f) == RIGHT) {
-		canMove = avalCanMove(doors, s->getDoorUR(), s->getDoorDR(), 3, 2, 1);
-	} else if (s->getDirection(f) == LEFT) {
-		canMove = avalCanMove(doors, s->getDoorUL(), s->getDoorDL(), 3, 2, 4);
+		if (s->getDirection(f) == UP) {
+			canMove = avalCanMove(doors, s->getDoorUR(), s->getDoorUL(), 4, 1, 2)
+			 || ( doors[s->getDoorUR()->getX()][s->getDoorUR()->getY()].getState() != 4 
+			 	&& doors[s->getDoorUL()->getX()][s->getDoorUL()->getY()].getState() != 1 );
+		} else if (s->getDirection(f) == DOWN) {
+			canMove = avalCanMove(doors, s->getDoorDL(), s->getDoorDR(), 1, 4, 3) 
+			|| ( doors[s->getDoorDL()->getX()][s->getDoorDL()->getY()].getState() != 1 
+			 	&& doors[s->getDoorDR()->getX()][s->getDoorDR()->getY()].getState() != 4 );
+		} else if (s->getDirection(f) == RIGHT) {
+			canMove = avalCanMove(doors, s->getDoorUR(), s->getDoorDR(), 3, 2, 1)
+			|| ( doors[s->getDoorUR()->getX()][ s->getDoorUR()->getY()].getState() != 3 
+			 	&& doors[s->getDoorDR()->getX()][ s->getDoorDR()->getY()].getState() != 2 );
+		} else if (s->getDirection(f) == LEFT) {
+			canMove = avalCanMove(doors, s->getDoorUL(), s->getDoorDL(), 3, 2, 4)
+			|| ( doors[s->getDoorUL()->getX()][ s->getDoorUL()->getY()].getState() != 3 
+			 	&& doors[s->getDoorDL()->getX()][ s->getDoorDL()->getY()].getState() != 2 );
+		} 
 	}
 	return canMove;
 }
 
 int getDoorConfiguration(vvc board, vvd doors, cell *from, cell *to) {
-	if (canMove(board, doors, from, to)) {
+	/*if (canMove(board, doors, from, to)) {
 
-	}
-}
-
-/**
- * retorna true se for possível ir de a para b, false caso contrário.
- *
- * */
-
-void findPath(vector<vector<cell> > board, vector<vector<door> > doors,
-		point * s, point *f, vector<vector<int> > * Mexp,
-		vector<vector<point> > * paths, int id) {
-	if (s->getX() == f->getX() && s->getY() == f->getY())
-		return;
-	vector<cell> lAdja = getAdjacentes(board, s);
-	int tam_lAdja = lAdja.size();
-	vector<point> path;
-	++id;
-	for (int i = 0; i < tam_lAdja; ++i) {
-		point *v = new point(lAdja[i].getPosition()->getX(),
-				lAdja[i].getPosition()->getY());
-		/*printPoint(s);
-		 printPoint(v);
-		 cout << canMove(board, doors, s, v) << endl;*/
-		if ((*Mexp)[v->getX()][v->getY()] == 0 && canMove(board, doors, s, v)) {
-			(*Mexp)[v->getX()][v->getY()] = 1;
-			findPath(board, doors, v, f, Mexp, paths, id);
-		}
-	}
-
+	}*/
 }
 
 /** vértice {configuração atual de portas, cell}
@@ -182,7 +162,7 @@ int dijkstra(vvc board, vvd doors,
 		point * s, vector<vvi> graph) {
 	int n = board.size();
 	vvi dist(n, vi(n, INT_MAX));
-	dis[s->getX()][s->getY()] = 0;
+	dist[s->getX()][s->getY()] = 0;
 	priority_queue<ic, vector<ic>, verticeComparator> pq;
 	pq.push( ic(0, board[s->getX()][s->getY()]) );
 
@@ -197,7 +177,7 @@ int dijkstra(vvc board, vvd doors,
 		if (dist[p->getX()][p->getY()]) continue;
 		/*pega os adjacentes de c em board com as configurações
 		possíveis de portas provocadas por tais movimentos */
-		vector<ic> adjs = getAdjacentes(board, doors, c);
+		//vector<ic> adjs = getAdjacentes(board, doors, c);
 		
 
 	}
@@ -268,7 +248,7 @@ int main() {
 			cout << "\n";
 		}*/
 
-		int id = -1;
+		int id = 0;
 		for (int i = 0; i < n + 1; ++i) {
 			vector<door> line;
 			for (int j = 0; j < n + 1; ++j) {
@@ -276,7 +256,9 @@ int main() {
 				cin >> cDoor;
 				point * p = new point(i, j);
 				//door (currenteState, nextState, point)
-				door d(++id, cDoor, -1, p);
+				int idDoor = -1;
+				if (cDoor != 0) idDoor = ++id;
+				door d(idDoor, cDoor, -1, p);
 				line.push_back(d);
 			}
 			doors.push_back(line);
@@ -298,27 +280,25 @@ int main() {
 		cout << endl << "===============DOORS=============\n" << endl;
 		printDoors(doors);
 		cout << "============== MOVEMENT MATRIX =============\n";
-		findPath(board, doors, &s, &f, &Mexp, &paths, 0);
-		printVectorInt(Mexp);
+		//printVectorInt(Mexp);
 
-		/*cout << canMove(doors, new point(0, 0), new point(0, 1)) << endl;
-		 cout << canMove(doors, new point(2, 1), new point(2, 2)) << endl;
-		 cout << "Start with your move: \n";
-		 int x1, y1, x2, y2;
-		 while (scanf("%d %d %d %d", &x1, &y1, &x2, &y2) == 4) {
-		 point *p1 = new point(x1, y1);
-		 point *p2 = new point(x2, y2);
-		 if (canMove(doors, p1, p2)) {
-		 cout << "Yes from ";
-		 } else {
-		 cout << "No from ";
-		 }
-		 printPoint(p1);
-		 cout << "to ";
-		 printPoint(p2);
-		 cout << endl;
-		 }*/
-
+		cout << canMove(board, doors, new point(0, 0), new point(0, 1)) << endl;
+		cout << canMove(board, doors, new point(2, 1), new point(2, 2)) << endl;
+		cout << "Start with your move: \n";
+		int x1, y1, x2, y2;
+		while (scanf("%d %d %d %d", &x1, &y1, &x2, &y2) == 4) {
+			point *p1 = new point(x1, y1);
+			point *p2 = new point(x2, y2);
+			if (canMove(board, doors, p1, p2)) {
+			cout << "Yes from ";
+			} else {
+			cout << "No from ";
+			}
+			printPoint(p1);
+			cout << "to ";
+			printPoint(p2);
+			cout << endl;
+		}
 	}
 
 	return 0;
