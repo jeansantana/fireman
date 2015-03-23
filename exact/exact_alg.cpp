@@ -20,6 +20,7 @@ typedef vector<cell> vc;
 typedef vector<door> vd;
 typedef vector<vc> vvc;
 typedef vector<vd> vvd;
+typedef vector <vector <vector <bool> > > vvvb;
 
 
 void printPoint(point * p) {
@@ -31,8 +32,14 @@ void printDoors(vector<vector<door> > doors) {
 	cout << "TM: " << tam << endl;
 	for (int i = 0; i < tam; ++i) {
 		for (int j = 0; j < tam; ++j) {
-			cout << "[" << doors[i][j].getState() << "/"
+			if (doors[i][j].getId() != -1) {
+				cout << doors[i][j].getId() << "[" << doors[i][j].getState() << "/"
 					<< doors[i][j].getNextState() << "] ";
+			} else {
+					cout << " [" << doors[i][j].getState() << "/"
+					<< doors[i][j].getNextState() << "] ";
+			}
+
 		}
 		cout << endl;
 	}
@@ -108,11 +115,12 @@ bool avalCanMove(vector<vector<door> > doors, point * pDoorFrom,
 							== typeNextDoor);
 }
 
-bool canMove(vector<vector<cell> > board, vector<vector<door> > doors, point *s,
-		point *f) {
+/**
+ * receb como parametro 2 pontos a e b, respectivamente origente e destino, verifica-se a  
+ * possibilidade de se passar de a para b, e retorna o ponto final do bombeiro.
+ */
 
-	//point *s = from->getPosition();
-	//point *f = to->getPosition();
+bool canMove(vector<vector<cell> > board, vector<vector<door> > doors, point *s, point *f) {
 
 	bool canMove = false;
 	if (board[f->getX()][f->getY()].getTile() == GROUND) {
@@ -146,7 +154,7 @@ int getDoorConfiguration(vvc board, vvd doors, cell *from, cell *to) {
 /** vértice {configuração atual de portas, cell}
 todo peso entre duas celulas c1 e c2 é 1, 
 desde que se possa ir de c1 para c2 */
-typedef pair<int, cell> ic;
+typedef pair<int, point> ic;
 
 struct verticeComparator
 {
@@ -156,10 +164,9 @@ struct verticeComparator
     }
 };
 
-typedef std::set<ic, verticeComparator> JobSet;
+/*typedef std::set<ic, verticeComparator> JobSet;
 
-int dijkstra(vvc board, vvd doors,
-		point * s, vector<vvi> graph) {
+int dijkstra(vvc board, vvd doors, point * s, vector<vvi> graph) {
 	int n = board.size();
 	vvi dist(n, vi(n, INT_MAX));
 	dist[s->getX()][s->getY()] = 0;
@@ -176,13 +183,52 @@ int dijkstra(vvc board, vvd doors,
 		//analizar if abaixo
 		if (dist[p->getX()][p->getY()]) continue;
 		/*pega os adjacentes de c em board com as configurações
-		possíveis de portas provocadas por tais movimentos */
+		possíveis de portas provocadas por tais movimentos
 		//vector<ic> adjs = getAdjacentes(board, doors, c);
 		
 
 	}
 
 	return 0;
+}*/
+
+vector<ic> getAdjacentes(ic vertice, vvc board, vvd doors) {
+	vector<ic> adjs;
+
+
+
+	return adjs;
+}
+
+vector<vvi> BFS(int n, int nDoors, vvc board, vvd doors, point *s, vvvb graph) {
+	vector <vvi> dist;
+	//setup sizes w x h x d
+	dist.resize(n);
+	for (int i = 0; i < n; ++i) {
+		dist[i].resize(n);
+		for (int j = 0; j < n; ++j) {
+			//dist[i][j].resize(1 << nDoors);
+			dist[i][j].assign(1 << nDoors, INT_MAX);
+		}
+	}
+	dist[0][0][0] = 0; // dist from s to s is 0
+	queue<ic> q; 
+	q.push(ic(0, *s));
+
+	while (!q.empty()) {
+		ic u = q.front(); 
+		q.pop();
+		vector<ic> adjs = getAdjacentes(u, board, doors);
+		for (int i = 0; i < adjs.size(); ++i)
+		{
+			ic v = adjs[i];
+			if (graph[v.second.getX()][v.second.getY()][v.first] == false) {
+				graph[v.second.getX()][v.second.getY()][v.first] == true;
+				dist[v.second.getX()][v.second.getY()][v.first] = dist[u.second.getX()][u.second.getY()][u.first] + 1;
+				q.push(v);
+			}
+		}
+	}
 }
 
 int main() {
@@ -257,7 +303,7 @@ int main() {
 				point * p = new point(i, j);
 				//door (currenteState, nextState, point)
 				int idDoor = -1;
-				if (cDoor != 0) idDoor = ++id;
+				if (cDoor != 0) idDoor = id++;
 				door d(idDoor, cDoor, -1, p);
 				line.push_back(d);
 			}
