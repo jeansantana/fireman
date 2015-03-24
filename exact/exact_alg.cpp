@@ -3,8 +3,7 @@
 #include "../classes/point.h"
 #include "../classes/door.h"
 #include "../classes/cell.h"
-#include "../classes/exploitElement.h"
-#include <vector>
+#include "../classes/bitlib.h"
 #include <queue>
 #include <functional>
 #include <climits>
@@ -99,11 +98,6 @@ vector<cell> getAdjacentes(vector<vector<cell> > board, point * p) {
 	return adjs;
 }
 
-void printElementExploit(exploitElement e) {
-	cout << "[U: " << e.isUp() << ", D: " << e.isDown() << ", L: " << e.isLeft()
-			<< ", R: " << e.isRight() << "]; ";
-}
-
 bool avalCanMove(vector<vector<door> > doors, point * pDoorFrom,
 		point * pDoorTo, int typeDoorFrom, int typeDoorTo, int typeNextDoor) {
 	return (doors[pDoorFrom->getX()][pDoorFrom->getY()].getState()
@@ -145,24 +139,13 @@ bool canMove(vector<vector<cell> > board, vector<vector<door> > doors, point *s,
 	return canMove;
 }
 
-int getDoorConfiguration(vvc board, vvd doors, cell *from, cell *to) {
-	/*if (canMove(board, doors, from, to)) {
-
-	}*/
-}
-
-/** vértice {configuração atual de portas, cell}
-todo peso entre duas celulas c1 e c2 é 1, 
-desde que se possa ir de c1 para c2 */
-typedef pair<int, point> ic;
-
-struct verticeComparator
+/*struct verticeComparator
 {
     bool operator()(ic const &v1, ic const &v2)
     {
         return v1.first < v2.first;
     }
-};
+};*/
 
 /*typedef std::set<ic, verticeComparator> JobSet;
 
@@ -192,23 +175,146 @@ int dijkstra(vvc board, vvd doors, point * s, vector<vvi> graph) {
 	return 0;
 }*/
 
-vector<ic> getAdjacentes(ic vertice, vvc board, vvd doors) {
+
+/** vértice {configuração atual de portas, cell}
+todo peso entre duas celulas c1 e c2 é 1, 
+desde que se possa ir de c1 para c2 */
+typedef pair<int, point> ic;
+/*
+ * Move door, 0 its first state, 1 second state. If state is 0, go to 1, and from 1 to 0, otherwise.
+ * It returns the representation number after switch bit. 
+ */
+int moveDoorByBit(int currentConfig, int dId) {
+	int newConfig;
+	if (bitOn(currentConfig, dId)) {
+		newConfig = setBitITo0(currentConfig, dId);
+	} else {
+		newConfig = setBitITo1(currentConfig, dId);
+	}
+	return newConfig;
+}
+
+/*
+ * It returns the current config after move from s to f
+ */
+int getConfig(vvc board, vvd doors, point s, point f, int currentConfig) {
+	int configRes = currentConfig;
+	if (s.getDirection(&f) == LEFT || s.getDirection(&f) == RIGHT) {
+		point pUP;
+		point pDOWN;
+
+		if (s.getDirection(&f) == RIGHT) {
+			pUP = *(s.getDoorUR());
+			pDOWN = *(s.getDoorDR());
+		} else {
+			pUP = *(f.getDoorUR());
+			pDOWN = *(f.getDoorDR());
+		}
+
+		int idDoor = -1;
+
+		if (doors[pUP.getX()][pUP.getY()].getState() == 3) {
+			idDoor = doors[pUP.getX()][pUP.getY()].getId();
+		} else if (doors[pDOWN.getX()][pDOWN.getY()].getState() == 2) {
+			idDoor = doors[pDOWN.getX()][pDOWN.getY()].getId();
+		} 
+		if (idDoor != -1) {
+			// move door, 0 its first state, 1 second state. If state is 0, go to 1, and from 1 to 0, otherwise.
+			configRes = moveDoorByBit(configRes, idDoor);
+		}
+	} else if (s.getDirection(&f) == UP || s.getDirection(&f) == DOWN) {
+		point pLEFT;
+		point pRIGHT;
+
+		if (s.getDirection(&f) == DOWN) {
+			pLEFT = *(s.getDoorDL());
+			pRIGHT = *(s.getDoorDR());
+		} else {
+			pLEFT = *(f.getDoorDL());
+			pRIGHT = *(f.getDoorDR());
+		}
+
+		int idDoor = -1;
+
+		if (doors[pLEFT.getX()][pLEFT.getY()].getState() == 1) {
+			idDoor = doors[pLEFT.getX()][pLEFT.getY()].getId();
+		} else if (doors[pRIGHT.getX()][pRIGHT.getY()].getState() == 4) {
+			idDoor = doors[pRIGHT.getX()][pRIGHT.getY()].getId();
+		} 
+		if (idDoor != -1) {
+			configRes = moveDoorByBit(configRes, idDoor);
+		}
+	}
+	return configRes;
+}
+
+bool intervalTest(int n, point p) {
+	return p.getX() >= 0 && p.getX() < n &&
+		   p.getY() >= 0 && p.getY() < n;
+}
+
+vvd applyConfig(vvd doors, int currentConfig) {
+	vvd newDoors = doors;
+	vi _bitsOn = getBitsOn(currentConfig);
+	int k = 0;
+	for (int i = 0; i < (int) doors.size(); ++i) {
+		for (int j = 0; j < (int) doors.size(); ++j) {
+			if (_bitsOn[k] == doors[i][j].getId()) {
+				k++;
+				newDoors[i][j].moveDoor();
+			}
+		}
+	}
+
+	return newDoors;
+}
+
+vector<ic> getAdjacentes(int n, int m, ic vertice, vvc board, vvd doors) {
 	vector<ic> adjs;
 
-
+	point s = vertice.second;
+	int currentConfig = vertice.first;
+	vvd newDoors = applyConfig(doors, currentConfig);
+	// left from s
+	point f(s.getX(), s.getY() - 1); 
+	//canMove should be get the actual configuration. 
+	//I must be to do other function with this adaptation
+	if (intervalTest(n, f) && canMove(board, newDoors, &s, &f)) {
+		int z = getConfig(board, newDoors, s, f, currentConfig);
+		adjs.push_back(ic(z, f));
+	} 
+	//down from rigth
+	f = point(s.getX(), s.getY() + 1);
+	if (intervalTest(n, f) && canMove(board, newDoors, &s, &f)) {
+		int z = getConfig(board, newDoors, s, f, currentConfig);
+		adjs.push_back(ic(z, f));
+	} 
+	//up from s
+	f = point(s.getX() - 1, s.getY());
+	if (intervalTest(n, f) && canMove(board, newDoors, &s, &f)) {
+		int z = getConfig(board, newDoors, s, f, currentConfig);
+		adjs.push_back(ic(z, f));
+	}
+	//bottom from s
+	f = point(s.getX() + 1, s.getY());
+	if (intervalTest(n, f) && canMove(board, newDoors, &s, &f)) {
+		int z = getConfig(board, newDoors, s, f, currentConfig);
+		adjs.push_back(ic(z, f));
+	}
 
 	return adjs;
 }
 
 vector<vvi> BFS(int n, int nDoors, vvc board, vvd doors, point *s, vvvb graph) {
 	vector <vvi> dist;
+	int m = 1 << nDoors;// doors combinations number
 	//setup sizes w x h x d
 	dist.resize(n);
 	for (int i = 0; i < n; ++i) {
 		dist[i].resize(n);
 		for (int j = 0; j < n; ++j) {
 			//dist[i][j].resize(1 << nDoors);
-			dist[i][j].assign(1 << nDoors, INT_MAX);
+			dist[i][j].assign(m, INT_MAX);
 		}
 	}
 	dist[0][0][0] = 0; // dist from s to s is 0
@@ -218,7 +324,7 @@ vector<vvi> BFS(int n, int nDoors, vvc board, vvd doors, point *s, vvvb graph) {
 	while (!q.empty()) {
 		ic u = q.front(); 
 		q.pop();
-		vector<ic> adjs = getAdjacentes(u, board, doors);
+		vector<ic> adjs = getAdjacentes(n, m, u, board, doors);
 		for (int i = 0; i < adjs.size(); ++i)
 		{
 			ic v = adjs[i];
@@ -228,7 +334,7 @@ vector<vvi> BFS(int n, int nDoors, vvc board, vvd doors, point *s, vvvb graph) {
 				q.push(v);
 			}
 		}
-	}
+	} 
 }
 
 int main() {

@@ -44,14 +44,10 @@ public:
 		return nextState;
 	}
 
-	/**
-	 * Return the next tile to go to.
-	 * */
-	point * moveDoor() {
+	void moveDoor() {
 		int aux = currentState;
 		currentState = nextState;
 		nextState = aux;
-		return NULL;
 	}
 
 	point * getPosition() {
