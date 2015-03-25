@@ -183,7 +183,7 @@ typedef pair<int, point> ic;
 /*
  * Move door, 0 its first state, 1 second state. If state is 0, go to 1, and from 1 to 0, otherwise.
  * It returns the representation number after switch bit. 
- */
+ *
 int moveDoorByBit(int currentConfig, int dId) {
 	int newConfig;
 	if (bitOn(currentConfig, dId)) {
@@ -192,7 +192,7 @@ int moveDoorByBit(int currentConfig, int dId) {
 		newConfig = setBitITo1(currentConfig, dId);
 	}
 	return newConfig;
-}
+}*/
 
 /*
  * It returns the current config after move from s to f
@@ -220,7 +220,7 @@ int getConfig(vvc board, vvd doors, point s, point f, int currentConfig) {
 		} 
 		if (idDoor != -1) {
 			// move door, 0 its first state, 1 second state. If state is 0, go to 1, and from 1 to 0, otherwise.
-			configRes = moveDoorByBit(configRes, idDoor);
+			configRes = flipBit(configRes, idDoor);
 		}
 	} else if (s.getDirection(&f) == UP || s.getDirection(&f) == DOWN) {
 		point pLEFT;
@@ -242,7 +242,7 @@ int getConfig(vvc board, vvd doors, point s, point f, int currentConfig) {
 			idDoor = doors[pRIGHT.getX()][pRIGHT.getY()].getId();
 		} 
 		if (idDoor != -1) {
-			configRes = moveDoorByBit(configRes, idDoor);
+			configRes = flipBit(configRes, idDoor);
 		}
 	}
 	return configRes;
@@ -253,15 +253,17 @@ bool intervalTest(int n, point p) {
 		   p.getY() >= 0 && p.getY() < n;
 }
 
-vvd applyConfig(vvd doors, int currentConfig) {
+vvd applyConfig(int nDoors, vvd doors, int currentConfig) {
 	vvd newDoors = doors;
-	vi _bitsOn = getBitsOn(currentConfig);
+	vi _bitsOn = getBitsOn(currentConfig, nDoors);
 	int k = 0;
-	for (int i = 0; i < (int) doors.size(); ++i) {
-		for (int j = 0; j < (int) doors.size(); ++j) {
-			if (_bitsOn[k] == doors[i][j].getId()) {
-				k++;
-				newDoors[i][j].moveDoor();
+	if (_bitsOn.size() > 0) {
+		for (int i = 0; i < (int) doors.size(); ++i) {
+			for (int j = 0; j < (int) doors.size(); ++j) {
+				if (_bitsOn[k] == doors[i][j].getId()) {
+					k++;
+					newDoors[i][j].moveDoor();
+				}
 			}
 		}
 	}
@@ -269,12 +271,19 @@ vvd applyConfig(vvd doors, int currentConfig) {
 	return newDoors;
 }
 
+/*
+ * It return adjacent list of a vertice
+ * n - size of board (nxn)
+ * m - number of doors
+ * board - board of tiles, 
+ * doors - board of doors
+ */
 vector<ic> getAdjacentes(int n, int m, ic vertice, vvc board, vvd doors) {
 	vector<ic> adjs;
 
 	point s = vertice.second;
 	int currentConfig = vertice.first;
-	vvd newDoors = applyConfig(doors, currentConfig);
+	vvd newDoors = applyConfig(m, doors, currentConfig);
 	// left from s
 	point f(s.getX(), s.getY() - 1); 
 	//canMove should be get the actual configuration. 
@@ -317,23 +326,29 @@ vector<vvi> BFS(int n, int nDoors, vvc board, vvd doors, point *s, vvvb graph) {
 			dist[i][j].assign(m, INT_MAX);
 		}
 	}
-	dist[0][0][0] = 0; // dist from s to s is 0
+	dist[s->getX()][s->getY()][0] = 0; // dist from s to s is 0
 	queue<ic> q; 
 	q.push(ic(0, *s));
-
+	//int w = 0;
 	while (!q.empty()) {
 		ic u = q.front(); 
 		q.pop();
-		vector<ic> adjs = getAdjacentes(n, m, u, board, doors);
-		for (int i = 0; i < adjs.size(); ++i)
-		{
+		//cout << ++w << endl;
+		//cout << "antes de getAdjacentes\n" << endl;
+		vector<ic> adjs = getAdjacentes(n, nDoors, u, board, doors);
+		//cout << "Depois de getAdjacentes\n" << endl;
+		cout << "(" << u.second.getX() << ", " 
+			 << u.second.getY() << ", " << u.first << ")\n";
+		for (int i = 0; i < adjs.size(); ++i) {
 			ic v = adjs[i];
+			//add board teste here? When tile is 1 == WALL ?
 			if (graph[v.second.getX()][v.second.getY()][v.first] == false) {
 				graph[v.second.getX()][v.second.getY()][v.first] == true;
 				dist[v.second.getX()][v.second.getY()][v.first] = dist[u.second.getX()][u.second.getY()][u.first] + 1;
 				q.push(v);
 			}
 		}
+		cout << "chega ao fim de cada\n";
 	} 
 }
 
@@ -377,7 +392,7 @@ int main() {
 
 		//reading doors current state matrix
 
-		vector<vector<vector<int> > > MExploit;
+		vector<vector<vector<bool> > > MExploit;
 
 		// Set up sizes. (HEIGHT x WIDTH)
 		MExploit.resize(n);
@@ -386,7 +401,7 @@ int main() {
 
 			for (int j = 0; j < n; ++j) {
 				MExploit[i][j].resize(1 << nDoors);
-				MExploit[i][j].assign(n, 0);
+				MExploit[i][j].assign(n, false);
 			}
 		}
 
@@ -434,7 +449,9 @@ int main() {
 		cout << "============== MOVEMENT MATRIX =============\n";
 		//printVectorInt(Mexp);
 
-		cout << canMove(board, doors, new point(0, 0), new point(0, 1)) << endl;
+		vector<vvi> res = BFS(n, nDoors, board, doors, &s, MExploit);
+		cout << "RES: " << res[10][10][11] << endl; 
+		/*cout << canMove(board, doors, new point(0, 0), new point(0, 1)) << endl;
 		cout << canMove(board, doors, new point(2, 1), new point(2, 2)) << endl;
 		cout << "Start with your move: \n";
 		int x1, y1, x2, y2;
@@ -450,7 +467,7 @@ int main() {
 			cout << "to ";
 			printPoint(p2);
 			cout << endl;
-		}
+		}*/
 	}
 
 	return 0;
